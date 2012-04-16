@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Tim Strijdhorst
+ * @company regiecentrale
  * @abstract Class that will take an XML file containing HTTP-headers exported by the Firefox plugin TamperData.
  * It will then set up a cURL session mimicking these HTTP-headers and give you control over the flow of execution as well as the 
  * possibility to customize the HTTP-headers further. After the configuration is done launch the request and get the data back. 
