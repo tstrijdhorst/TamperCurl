@@ -1,7 +1,6 @@
 <?php
 /**
  * @author Tim Strijdhorst
- * @company regiecentrale
  * @abstract Class that will take an XML file containing HTTP-headers exported by the Firefox plugin TamperData.
  * It will then set up a cURL session mimicking these HTTP-headers and give you control over the flow of execution as well as the 
  * possibility to customize the HTTP-headers further. After the configuration is done launch the request and get the data back. 
@@ -152,7 +151,7 @@ class TamperCurl
 	 */
 	public function init($reuseConnection=false,$resetSettings=null)
 	{
-		if($reuseConnection && $this->curlSession == null)
+		if($reuseConnection && gettype($this->curlSession) == 'resource')
 		{
 			throw new Exception("You've already closed the cURL session...");
 		}
@@ -354,6 +353,11 @@ class TamperCurl
 		unset($this->postHeadersArray[$oldName]);
 	}
 	
+	public function PostVariableNameExists($name)
+	{
+		return array_key_exists($name,$this->postHeadersArray);
+	}
+	
 	/**
 	 * Construct an url encoded query-string listing all the POSTdata ((&)name=value)
 	 * 
@@ -362,9 +366,9 @@ class TamperCurl
 	 * 
 	 * @param array(String) $postArray
 	 */
-	public function constructPOSTDataListFromArray($postHeadersArray=-1)
+	public function constructPOSTDataListFromArray($postHeadersArray=null)
 	{
-		if($postHeadersArray == -1) $postHeadersArray = $this->postHeadersArray;
+		if($postHeadersArray == null) $postHeadersArray = $this->postHeadersArray;
 		
 		$postVars = '';
 		
@@ -472,7 +476,7 @@ class TamperCurl
 	}
 	
 	/**
-	 * @return SimpleXMLElement xmlFile or null (if doesn't exist yet)
+	 * @return SimpleXMLElement[] xmlFile or null (if doesn't exist yet)
 	 */
 	public function getXMLHeaders()
 	{
@@ -551,3 +555,4 @@ class TamperCurl
 		return $this->output;
 	}
 }
+
