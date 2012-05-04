@@ -1,0 +1,25 @@
+Tampercurl is a php-class that will take an XML file containing HTTP-headers exported by the Firefox plugin TamperData.
+It will then set up a cURL session mimicking these HTTP-headers and give you control over the flow of execution as well as the 
+possibility to customize the HTTP-headers further. After the configuration is done launch the request and get the data back. 
+It is possible to reuse connections, but remember that the cURL settings you specified during an earlier launch will 
+not be automaticly reverted (this can be specified though).
+
+It is possible to load up multiple headers specified in one XML file, with the load*header() functions you can control what
+header is initialized for execution.
+
+Notice: It is ofcourse advisible to remove everything you don't want from the XML file, 'host' property is automaticly 
+skipped as this is derived from the url in the header but especially the cookie property is error prone in combination 
+with a custom set cookiejar.
+ *
+Dependencies:
++ PHP cURL
+o TamperData for Firefox (not a requirement for the execution of this script, but it's used for the generation of the XML files)
+
+Bugs:
++ A bug in TamperData causes the character ':' to be converted to %253A (instead of %3A) when it is found in POST-keys
+  I'm not sure whether this is a problem with special characters in general or just ':', same for @
+
+License:
+This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
+To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/3.0/ or send a letter to 
+Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
