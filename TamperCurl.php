@@ -74,7 +74,7 @@ class TamperCurl
 		 */
 		if($this->stderrLocation != null)
 		{			
-			$handle = fopen($this->stderrLocation,'w');
+			$handle = fopen($this->stderrLocation,'a+');
 			curl_setopt($this->curlSession, CURLOPT_STDERR, $handle);
 			curl_setopt($this->curlSession, CURLOPT_VERBOSE, 2); //Verbosity 2 to actually log something to STDERR...
 		}
