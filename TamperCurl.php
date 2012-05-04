@@ -1,7 +1,6 @@
 <?php
 /**
  * @author Tim Strijdhorst
- * @company regiecentrale
  * @abstract Class that will take an XML file containing HTTP-headers exported by the Firefox plugin TamperData.
  * It will then set up a cURL session mimicking these HTTP-headers and give you control over the flow of execution as well as the 
  * possibility to customize the HTTP-headers further. After the configuration is done launch the request and get the data back. 
@@ -21,7 +20,7 @@
  * 
  * Bugs:
  * + A bug in TamperData causes the character ':' to be converted to %253A (instead of %3A) when it is found in POST-keys
- *   I'm not sure whether this is a problem with special characters in general or just ':'
+ *   I'm not sure whether this is a problem with special characters in general or just ':', same for @
  * 
  * License:
  * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
@@ -70,6 +69,16 @@ class TamperCurl
 	 */
 	public function doRequest()
 	{
+		/**
+		 * @todo for some reason the STDERR output is not working
+		 */
+		if($this->stderrLocation != null)
+		{			
+			$handle = fopen($this->stderrLocation,'w');
+			curl_setopt($this->curlSession, CURLOPT_STDERR, $handle);
+			curl_setopt($this->curlSession, CURLOPT_VERBOSE, 2); //Verbosity 2 to actually log something to STDERR...
+		}
+		
 		if(count($this->postHeadersArray) > 0)
 		{
 			//Tell cURL we want to do some posting
@@ -101,15 +110,6 @@ class TamperCurl
 		{
 			curl_setopt($this->curlSession, CURLOPT_COOKIEFILE, null);
 			curl_setopt($this->curlSession, CURLOPT_COOKIEJAR, null);
-		}
-		/**
-		 * @todo for some reason the STDERR output is not working
-		 */
-		if($this->stderrLocation != null)
-		{
-			$handle = fopen($this->stderrLocation,'w');
-			curl_setopt($this->curlSession, CURLOPT_STDERR, $handle);
-			curl_setopt($this->curlSession, CURLOPT_VERBOSE, 1); //Verbosity 1 to actually log something to STDERR...
 		}
 		
 		$this->output[$this->headerCounter] = curl_exec($this->curlSession);
@@ -144,6 +144,33 @@ class TamperCurl
 	}
 	
 	/**
+	 * Do the next N requests without any interference from the user or code.
+	 * 
+	 * NOTICE: Afterwards the N+1th header will be selected.
+	 * 
+	 * @param unknown_type $amount
+	 * @throws Exception
+	 */
+	public function doNextAmountRequests($amount)
+	{
+		try
+		{
+			for($i=0;$i<$amount;$i++)
+			{
+				$this->doRequest();
+				$output = $this->getOutput();
+				$this->loadNextHeader();				
+			}
+		}
+		catch(Exception $e)
+		{
+			throw new Exception("Last header has been reached.");
+		}
+		
+		return $this->output;
+	}
+	
+	/**
 	 * Initializes the cURL session (a new one or just keep using the old one). Get the URL from the XML and set all the
 	 * custom request headers.
 	 * 
@@ -152,7 +179,7 @@ class TamperCurl
 	 */
 	public function init($reuseConnection=false,$resetSettings=null)
 	{
-		if($reuseConnection && gettype($this->curlSession) == 'resource')
+		if($reuseConnection && $this->curlSession == null)
 		{
 			throw new Exception("You've already closed the cURL session...");
 		}
@@ -485,6 +512,52 @@ class TamperCurl
 	}
 	
 	/**
+	 * Saves the XML headers to a string and if set to a file at given location
+	 * 
+	 * Uses the mime-type filters
+	 * 
+	 * @param String $path
+	 * @todo add proper rootElement :r
+	 */
+	public function saveXMLHeaders($path=null)
+	{		
+		$dom = new DOMDocument('1.0');
+		$dom->preserveWhiteSpace = false;
+		$dom->formatOutput = true;
+		$rootElement = $dom->createElement('tdRequests');
+		
+		
+		if($this->mimeTypeFilters != null && !count($this->mimeTypeFilters) == 0)
+		{
+			foreach($this->mimeTypeFilters as $mimeTypeFilter)
+			{				
+				$xmlHeadersFiltered = $this->xmlHeaders->xpath("//tdRequest/tdMimeType[text()='".$mimeTypeFilter."']/parent::*");
+				
+				if($xmlHeadersFiltered != null)
+				{
+					foreach($xmlHeadersFiltered as $xmlHeader)
+					{
+						$dom_sxe = dom_import_simplexml($xmlHeader);
+						$dom_sxe = $dom->importNode($dom_sxe, true);
+						$dom->appendChild($dom_sxe);
+					}
+				}
+			}
+		}		
+		
+		
+		$dom->insertBefore($rootElement,$dom_sxe);
+		$xmlFile = $dom->saveXML();
+		
+		if($path != null)
+		{
+			file_put_contents($path,$xmlFile);
+		}
+		
+		return $xmlFile;
+	}
+	
+	/**
 	 * @return array(String) $customHeaders
 	 */
 	public function getCustomHeaders()
@@ -556,4 +629,3 @@ class TamperCurl
 		return $this->output;
 	}
 }
-
